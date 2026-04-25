@@ -1,0 +1,32 @@
+{
+  "version": 2,
+  "name": "evez-credit-api",
+  "framework": null,
+  "functions": {
+    "api/*.py": {
+      "runtime": "vercel-python@4.x"
+    }
+  },
+  "routes": [
+    {
+      "src": "/api/score",
+      "dest": "/api/score.py"
+    },
+    {
+      "src": "/api/batch",
+      "dest": "/api/batch.py"
+    },
+    {
+      "src": "/api/health",
+      "dest": "/api/health.py"
+    },
+    {
+      "src": "/",
+      "dest": "/api/health.py"
+    }
+  ],
+  "env": {
+    "SUPABASE_URL": "@supabase_url",
+    "SUPABASE_ANON_KEY": "@supabase_anon_key"
+  }
+}
