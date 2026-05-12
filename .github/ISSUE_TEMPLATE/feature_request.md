@@ -1,22 +1,19 @@
 ---
 name: Feature Request
-about: Suggest a feature for the EVEZ Credit Scoring API
+about: Suggest a new feature or enhancement
 title: '[FEATURE] '
 labels: enhancement
 assignees: ''
 ---
 
-## Feature Description
-A clear description of the feature.
-
-## Use Case
-Why is this needed?
+## Problem
+What problem does this feature solve?
 
 ## Proposed Solution
-How should it work?
+Describe your proposed solution.
 
-## Impact
-- [ ] Scoring model change
-- [ ] API endpoint change
-- [ ] Database schema change
-- [ ] Compliance impact
+## Alternatives Considered
+Any alternative solutions or features you've considered.
+
+## Additional Context
+Any other context, screenshots, or references.
