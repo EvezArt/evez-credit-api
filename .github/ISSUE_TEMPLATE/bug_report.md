@@ -1,13 +1,13 @@
 ---
 name: Bug Report
-about: Report a bug in the EVEZ Credit Scoring API
+about: Report a bug or unexpected behavior
 title: '[BUG] '
 labels: bug
 assignees: ''
 ---
 
 ## Description
-What happened?
+A clear description of what the bug is.
 
 ## Steps to Reproduce
 1. 
@@ -15,9 +15,15 @@ What happened?
 3. 
 
 ## Expected Behavior
-What should have happened?
+What you expected to happen.
+
+## Actual Behavior
+What actually happened.
 
 ## Environment
-- API Version:
-- Endpoint:
-- Request payload:
+- OS:
+- Version:
+- Node/Browser:
+
+## Additional Context
+Any other context, logs, or screenshots.
