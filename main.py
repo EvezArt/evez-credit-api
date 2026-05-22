@@ -3,6 +3,8 @@ import time
 from collections import defaultdict
 from contextlib import asynccontextmanager
 from fastapi import FastAPI, HTTPException, Depends, Request
+from fastapi.responses import HTMLResponse
+from fastapi.staticfiles import StaticFiles
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from pydantic import BaseModel
 from typing import Optional, List
@@ -91,6 +93,14 @@ app = FastAPI(
     lifespan=lifespan,
 )
 app.include_router(billing_router)
+
+
+# ─── LANDING PAGE ───────────────────────────────────────────────
+
+@app.get("/", response_class=HTMLResponse, include_in_schema=False)
+async def landing():
+    from pathlib import Path
+    return Path("static/index.html").read_text()
 
 
 # ─── PUBLIC ENDPOINTS ───────────────────────────────────────────────
