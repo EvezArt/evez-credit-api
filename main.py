@@ -10,6 +10,7 @@ from datetime import datetime, timezone
 
 import evez_credit_engine as engine
 import credit_db
+from stripe_billing import router as billing_router
 
 # ─── RATE LIMITER (in-memory, per-key) ─────────────────────────────
 
@@ -85,17 +86,18 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(
     title="EVEZ Credit Scoring API",
-    version="2.1.0",
-    description="8-factor FICO-equivalent credit scoring (300–850) with ECOA/FCRA compliance, API key auth, and rate limiting",
+    version="2.2.0",
+    description="8-factor FICO-equivalent credit scoring (300–850) with ECOA/FCRA compliance, API key auth, rate limiting, and Stripe billing",
     lifespan=lifespan,
 )
+app.include_router(billing_router)
 
 
 # ─── PUBLIC ENDPOINTS ───────────────────────────────────────────────
 
 @app.get("/health")
 async def health():
-    return {"status": "ok", "version": "2.1.0", "model": "EVEZ-CS-v2.0"}
+    return {"status": "ok", "version": "2.2.0", "model": "EVEZ-CS-v2.0"}
 
 
 @app.post("/register")
