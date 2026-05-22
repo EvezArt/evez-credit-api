@@ -1,60 +1,102 @@
 # EVEZ Credit Scoring API
 
-Production-ready FICO-equivalent credit scoring engine with full ECOA/FCRA compliance.
+**8-factor FICO-equivalent credit scoring engine. Scores 300–850 with ECOA/FCRA compliance.**
 
-## Features
+## What It Does
 
-- **8-Factor Risk Model**: Payment history, utilization, credit age, mix, inquiries, DTI, derogatory marks, total accounts
-- **FICO-Equivalent Scoring**: 300-850 range with letter grades (A+ through F)
-- **ECOA/FCRA Compliance**: Automated adverse action notice generation
-- **Real-Time & Batch**: Score individual applicants or entire portfolios
-- **Decision Engine**: Automated APPROVED/DENIED/MANUAL_REVIEW decisions
+Takes a credit profile (payment history, utilization, credit age, mix, inquiries, DTI, derogatory marks, total accounts) and produces:
+
+- **Credit score** (300–850, weighted factor model)
+- **Grade** (A+ through F)
+- **Decision** (APPROVED / MANUAL_REVIEW / DENIED)
+- **Default probability** (logistic model)
+- **Adverse action reasons** (FCRA-compliant, with AA codes)
+- **Full factor breakdown** with per-factor contribution
 
 ## API Endpoints
 
-| Method | Path | Description |
-|--------|------|-------------|
-| GET | `/health` | Health check |
-| POST | `/score` | Score single applicant |
-| POST | `/batch` | Batch score applicants |
-| GET | `/model-info` | Model metadata and weights |
+| Method | Path | Auth | Description |
+|--------|------|------|-------------|
+| GET | `/health` | No | Service health check |
+| POST | `/register` | No | Create API key (`{email, plan}`) |
+| POST | `/score` | Yes | Score a single applicant |
+| POST | `/batch` | Yes | Score multiple applicants |
+| GET | `/model-info` | Yes | Model weights, factors, thresholds |
+| GET | `/usage` | Yes | Your usage stats & remaining credits |
 
 ## Quick Start
 
 ```bash
+# Install
 pip install -r requirements.txt
-uvicorn main:app --host 0.0.0.0 --port 8080
+
+# Run
+uvicorn main:app --port 8080
+
+# Create an API key
+curl -X POST http://localhost:8080/register \
+  -H "Content-Type: application/json" \
+  -d '{"email": "test@example.com", "plan": "free"}'
+
+# Score an applicant
+curl -X POST http://localhost:8080/score \
+  -H "Authorization: Bearer evez_your_key_here" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "payment_history": 92,
+    "credit_utilization": 25,
+    "credit_age": 10,
+    "credit_mix": 4,
+    "new_inquiries": 1,
+    "dti_ratio": 28,
+    "derogatory_marks": 0,
+    "total_accounts": 12
+  }'
 ```
 
-## Deploy to Fly.io
+### Docker
 
 ```bash
-fly launch --name evez-credit-api --region ord
-fly deploy
+docker build -t evez-credit-api .
+docker run -p 8080:8080 evez-credit-api
 ```
 
-## Supabase Integration
+## Architecture
 
-The scoring engine integrates with a Supabase database schema:
-- `applicants` — Borrower profiles
-- `credit_profiles` — Raw credit data
-- `credit_scores` — Scoring results with factor breakdowns
-- `adverse_actions` — FCRA-compliant adverse action records
-- `loan_applications` — Loan lifecycle tracking
-- `audit_log` — Full compliance audit trail
+```
+main.py                  FastAPI app, auth, rate limiting, routing
+evez_credit_engine.py    Pure scoring logic (no I/O, no framework deps)
+credit_db.py             SQLite persistence (scoring_requests, api_keys, usage_logs)
+tests/                   pytest suite for the scoring engine
+```
 
-## Model Weights
+**Scoring model (EVEZ-CS-v2.0):**
+- 8 weighted risk factors (weights sum to 1.0)
+- Each factor normalized 0–1 then weighted
+- Weighted sum → linearly mapped to 300–850
+- Logistic function for default probability
+- Grade thresholds at standard breakpoints
+- Adverse action codes (AA01–AA08) for factors scoring <0.6
 
-| Factor | Weight |
-|--------|--------|
-| Payment History | 35% |
-| Credit Utilization | 20% |
-| Credit Age | 15% |
-| Credit Mix | 10% |
-| Recent Inquiries | 5% |
-| DTI Ratio | 5% |
-| Derogatory Marks | 5% |
-| Total Accounts | 5% |
+## What's Real vs. Planned
+
+| Feature | Status |
+|---------|--------|
+| 8-factor scoring engine | ✅ Working |
+| FICO-equivalent 300–850 range | ✅ Working |
+| ECOA/FCRA adverse action codes | ✅ Working |
+| API key authentication | ✅ Working (SQLite) |
+| Rate limiting (per-key) | ✅ Working (in-memory) |
+| SQLite persistence | ✅ Working |
+| Batch scoring | ✅ Working |
+| Stripe integration | 🔲 Planned |
+| PostgreSQL migration | 🔲 Planned |
+| Dashboard/UI | 🔲 Planned |
+| Model validation/backtesting | 🔲 Planned |
+
+## Configuration
+
+Copy `.env.example` to `.env` and fill in values. All vars are optional with sensible defaults.
 
 ## License
 

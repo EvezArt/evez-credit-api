@@ -1,8 +1,7 @@
 #!/usr/bin/env python3
 """
-EVEZ Credit Scoring API — Production-Ready FICO-Equivalent Engine
-Full ECOA/FCRA compliance, 8-factor risk model, adverse action generation.
-Deployable as FastAPI service on Fly.io.
+EVEZ Credit Scoring Engine — 8-Factor Risk Model
+FICO-equivalent 300–850 scoring with ECOA/FCRA compliance and adverse action generation.
 """
 
 import json
@@ -47,7 +46,7 @@ ADVERSE_ACTION_CODES = {
 
 
 def compute_factor_score(factor: str, value: float) -> float:
-    """Compute a 0–1 score for each risk factor."""
+    """Compute a 0–1 normalized score for a single risk factor."""
     if factor == "payment_history":
         return min(1.0, max(0.0, value / 100.0))
     elif factor == "credit_utilization":
@@ -69,7 +68,7 @@ def compute_factor_score(factor: str, value: float) -> float:
 
 def score_applicant(applicant: dict) -> dict:
     """
-    Score a single applicant. Returns full breakdown with ECOA/FCRA compliance.
+    Score a single applicant. Returns full breakdown with ECOA/FCRA compliance data.
     """
     weighted_sum = 0.0
     factor_scores = {}
@@ -148,158 +147,8 @@ def generate_sample_applicant(seed: Optional[int] = None) -> dict:
     }
 
 
-def batch_score(n: int = 100) -> dict:
-    """Score N applicants and return portfolio analytics."""
-    applicants = [generate_sample_applicant(seed=i) for i in range(n)]
-    results = [score_applicant(a) for a in applicants]
-
-    approved = [r for r in results if r["decision"] == "APPROVED"]
-    denied = [r for r in results if r["decision"] == "DENIED"]
-    review = [r for r in results if r["decision"] == "MANUAL_REVIEW"]
-
-    scores = [r["credit_score"] for r in results]
-    avg_score = sum(scores) / len(scores) if scores else 0
-
-    return {
-        "portfolio_summary": {
-            "total_applicants": n,
-            "approved": len(approved),
-            "denied": len(denied),
-            "manual_review": len(review),
-            "approval_rate": round(len(approved) / n * 100, 1),
-            "average_credit_score": round(avg_score, 1),
-            "score_distribution": {
-                "excellent_750+": len([s for s in scores if s >= 750]),
-                "good_700_749": len([s for s in scores if 700 <= s < 750]),
-                "fair_650_699": len([s for s in scores if 650 <= s < 700]),
-                "poor_600_649": len([s for s in scores if 600 <= s < 650]),
-                "very_poor_below_600": len([s for s in scores if s < 600])
-            },
-            "total_requested_volume": sum(a.get("requested_amount", 0) for a in applicants),
-            "approved_volume": sum(
-                a.get("requested_amount", 0)
-                for a, r in zip(applicants, results)
-                if r["decision"] == "APPROVED"
-            ),
-            "avg_default_probability": round(
-                sum(r["default_probability"] for r in results) / n, 4
-            )
-        },
-        "results": results[:5],  # First 5 for preview
-        "model_info": {
-            "version": "EVEZ-CS-v2.0",
-            "factors": len(RISK_FACTORS),
-            "compliance": ["ECOA", "FCRA", "Reg B"],
-            "score_range": list(SCORE_RANGE)
-        }
-    }
-
-
-# ─── FASTAPI APP DEFINITION ─────────────────────────────────────────
-
-FASTAPI_APP_CODE = '''
-"""EVEZ Credit Scoring API — FastAPI Application"""
-from fastapi import FastAPI, HTTPException
-from pydantic import BaseModel
-from typing import Optional, List
-import evez_credit_engine as engine
-
-app = FastAPI(
-    title="EVEZ Credit Scoring API",
-    version="2.0.0",
-    description="Production-ready FICO-equivalent credit scoring with ECOA/FCRA compliance"
-)
-
-class ApplicantInput(BaseModel):
-    id: Optional[str] = None
-    payment_history: float = 85.0
-    credit_utilization: float = 30.0
-    credit_age: float = 5.0
-    credit_mix: int = 3
-    new_inquiries: int = 1
-    dti_ratio: float = 30.0
-    derogatory_marks: int = 0
-    total_accounts: int = 8
-    annual_income: Optional[float] = None
-    requested_amount: Optional[float] = None
-
-class BatchRequest(BaseModel):
-    applicants: Optional[List[ApplicantInput]] = None
-    count: int = 10
-
-@app.get("/health")
-async def health():
-    return {"status": "ok", "version": "2.0.0", "model": "EVEZ-CS-v2.0"}
-
-@app.post("/score")
-async def score_applicant(applicant: ApplicantInput):
-    return engine.score_applicant(applicant.dict())
-
-@app.post("/batch")
-async def batch_score(request: BatchRequest):
-    if request.applicants:
-        results = [engine.score_applicant(a.dict()) for a in request.applicants]
-        return {"results": results, "count": len(results)}
-    return engine.batch_score(request.count)
-
-@app.get("/model-info")
-async def model_info():
-    return {
-        "version": "EVEZ-CS-v2.0",
-        "factors": list(engine.RISK_FACTORS.keys()),
-        "weights": {k: v["weight"] for k, v in engine.RISK_FACTORS.items()},
-        "score_range": list(engine.SCORE_RANGE),
-        "grade_thresholds": engine.GRADE_THRESHOLDS,
-        "compliance": ["ECOA", "FCRA", "Reg B", "Fair Lending"]
-    }
-'''
-
-FLY_TOML = '''
-app = "evez-credit-api"
-primary_region = "ord"
-
-[build]
-  builder = "paketobuildpacks/builder:base"
-
-[http_service]
-  internal_port = 8080
-  force_https = true
-  auto_stop_machines = true
-  auto_start_machines = true
-  min_machines_running = 0
-
-[env]
-  PORT = "8080"
-'''
-
-DOCKERFILE = '''FROM python:3.12-slim
-WORKDIR /app
-COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
-COPY . .
-EXPOSE 8080
-CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8080"]
-'''
-
-REQUIREMENTS = '''fastapi==0.115.0
-uvicorn[standard]==0.30.0
-pydantic==2.9.0
-'''
-
-
 if __name__ == "__main__":
-    print("=" * 60)
-    print("EVEZ CREDIT SCORING ENGINE v2.0 — Batch Run")
-    print("=" * 60)
-    result = batch_score(100)
-    summary = result["portfolio_summary"]
-    print(f"\nPortfolio: {summary['total_applicants']} applicants")
-    print(f"Approved: {summary['approved']} ({summary['approval_rate']}%)")
-    print(f"Denied: {summary['denied']}")
-    print(f"Manual Review: {summary['manual_review']}")
-    print(f"Avg Score: {summary['average_credit_score']}")
-    print(f"Approved Volume: ${summary['approved_volume']:,.0f}")
-    print(f"Avg Default Prob: {summary['avg_default_probability']}")
-    print(f"\nScore Distribution: {json.dumps(summary['score_distribution'], indent=2)}")
-    print(f"\nSample Result:")
-    print(json.dumps(result["results"][0], indent=2))
+    # Quick smoke test when run directly
+    sample = generate_sample_applicant(seed=42)
+    result = score_applicant(sample)
+    print(json.dumps(result, indent=2))

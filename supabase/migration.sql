@@ -1,1 +1,0 @@
--- See Supabase project vziaqxquzohqskesuxgz for live schema
