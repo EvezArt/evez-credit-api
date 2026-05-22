@@ -146,7 +146,7 @@ async def batch_score(request: BatchRequest, api_key: dict = Depends(require_aut
             credit_db.decrement_credits(api_key["key"], len(results))
         return {"results": results, "count": len(results)}
     # Generate random applicants
-    results = [engine.score_applicant(engine.generate_sample_applicant(seed=i).model_dump() if hasattr(engine.generate_sample_applicant(seed=i), 'model_dump') else engine.generate_sample_applicant(seed=i)) for i in range(request.count)]
+    results = [engine.score_applicant(engine.generate_sample_applicant(seed=i)) for i in range(request.count)]
     for r in results:
         credit_db.insert_scoring_request(
             applicant_id=r["applicant_id"],

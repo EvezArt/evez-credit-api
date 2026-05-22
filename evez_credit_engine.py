@@ -110,7 +110,7 @@ def score_applicant(applicant: dict) -> dict:
         decision = "MANUAL_REVIEW"
 
     return {
-        "applicant_id": applicant.get("id", hashlib.md5(json.dumps(applicant, sort_keys=True).encode()).hexdigest()[:12]),
+        "applicant_id": applicant.get("id") or hashlib.md5(json.dumps(applicant, sort_keys=True).encode()).hexdigest()[:12],
         "credit_score": credit_score,
         "grade": grade,
         "decision": decision,
