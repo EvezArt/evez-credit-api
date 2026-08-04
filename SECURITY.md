@@ -1,31 +1,15 @@
 # Security Policy
 
-## Supported Versions
-| Version | Supported |
-|---------|-----------|
-| 2.0.x   | ✅ |
-| < 2.0   | ❌ |
-
 ## Reporting a Vulnerability
-Email security concerns to the repository owner.
+**DO NOT** create a public GitHub issue. Email:
+- security@evez666.com
+- steven@evez666.com
 
-**Do NOT open a public issue for security vulnerabilities.**
+Include: Repository, description, steps to reproduce, impact.
 
-## Security Measures
-- All API endpoints use CORS restrictions
-- JWT verification available on all Edge Functions
-- Row Level Security (RLS) on all database tables
-- Audit logging with automatic triggers
-- HMAC signature verification for webhooks
-- No PII stored in logs
+## Response Time
+- Initial: 24 hours
+- Patch: 72 hours
+- Resolution: 7 days
 
-## Data Protection
-- SSN data is hashed (never stored in plain text)
-- Credit data access requires authentication
-- API keys with scoped permissions
-- Rate limiting enforced per API key
-
-## Compliance
-- ECOA: No protected class data collected or used
-- FCRA: All credit data from permissible CRA sources
-- Reg B: Adverse action notices generated automatically
+*Last updated: August 4, 2026*
